@@ -15,7 +15,9 @@ app.use(cookieParser());
 app.use(errorHandler);
 
 app.use('/',router());
-
+app.get('/',(req:express.Request,res:express.Response)=>{
+    res.json("home")
+})
 
 
 export {app};
