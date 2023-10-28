@@ -6,18 +6,17 @@ import errorHandler from './middlewares/errorHandle'
 
 import cookieParser from 'cookie-parser'
 import authRoute from './routes/auth.route'
-dotenv.config();
+dotenv.config()
 
-const app = express();
-app.use(express.json());
-app.use(cors({credentials:true}));
-app.use(cookieParser());
-app.use(errorHandler);
+const app = express()
+app.use(express.json())
+app.use(cors({ credentials: true }))
+app.use(cookieParser())
+app.use(errorHandler)
 
-app.use('/',router());
-app.get('/',(req:express.Request,res:express.Response)=>{
-    res.json("home")
+app.use('/', router())
+app.get('/', (req: express.Request, res: express.Response) => {
+  res.json('home')
 })
 
-
-export {app};
+export { app }
