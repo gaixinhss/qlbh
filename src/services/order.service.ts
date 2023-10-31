@@ -1,3 +1,4 @@
+import { Date } from 'mongoose'
 import { orderModel } from '../models/order.model'
 
 export const getAllOrder = () => orderModel.find()
@@ -65,3 +66,36 @@ export const findOrder = (conditions: any) => orderModel.find(conditions)
 
 export const replaceOrderItem = (code: string, orderItemNew: any) =>
   orderModel.updateOne({ code: code }, { $set: { orderItem: orderItemNew } })
+
+export const getListOrderDate = (date: string) =>
+  orderModel.find({
+    orderDate: {
+      $gte: new Date(date),
+      $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000)
+    }
+  })
+export const getOrderByMonth = (year: number, month: number) =>
+  orderModel.find({
+    orderDate: {
+      $gte: new Date(year, month - 1, 1),
+      $lt: new Date(year, month, 1)
+    }
+  })
+export const revenueOrder = (start: string, end: string) =>
+  orderModel.aggregate([
+    {
+      $match: {
+        orderDate: {
+          $gte: new Date(start),
+          $lte: new Date(end)
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalSales: { $sum: '$orderValue' }
+      }
+    }
+  ])

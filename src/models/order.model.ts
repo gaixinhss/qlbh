@@ -8,7 +8,7 @@ const Schema = mongoose.Schema
 const orderSchema = new Schema(
   {
     code: { type: String, require: true, unique: true },
-    orderDate: { type: String, require: true },
+    orderDate: { type: Date, require: true },
     customer: { type: String, ref: 'User', require: true },
     employee: { type: String, ref: 'User', require: true },
     orderItem: [

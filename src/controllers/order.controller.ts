@@ -1,12 +1,14 @@
-import express, { json } from 'express'
+import express from 'express'
 import {
   createOrder,
   deleteOrder,
   getAllOrder,
   getLastOrder,
+  getListOrderDate,
   getOrderByCode,
+  getOrderByMonth,
   revenueByCustomer,
-  revenueByProduct,
+  revenueOrder,
   updateOrder
 } from '../services/order.service'
 import httpStatus from 'http-status'
@@ -15,6 +17,8 @@ import { getUserByCode, updateUserByCode } from '../services/user.service'
 import { getProductByCode, updateProduct } from '../services/product.service'
 import { generateCode } from '../utils/generateCode'
 import { createDebt, getLastDebt } from '../services/debt.service'
+import { Date } from 'mongoose'
+import { revenueByProduct } from '../services/order.service'
 
 export const getOrders = async (req: express.Request, res: express.Response) => {
   try {
@@ -138,8 +142,6 @@ export const createOrd = async (req: express.Request, res: express.Response) => 
         bodyEmp.benefitType = '5% salary increase'
         bodyEmp.description = '5% salary increase'
       }
-      console.log(bodyCus)
-      console.log(bodyEmp)
       await updateUserByCode(customer, { loyal: bodyCus })
       await updateUserByCode(employee, { loyal: bodyEmp })
     }
@@ -271,5 +273,44 @@ export const editOrderItem = async (req: express.Request, res: express.Response)
   } catch (error) {
     console.error(error)
     return res.status(httpStatus.BAD_REQUEST).json('Error editing order')
+  }
+}
+
+export const revenueOrdersByDate = async (req: express.Request, res: express.Response) => {
+  try {
+    const { date } = req.params
+    const orders = await getListOrderDate(date)
+    return res.status(httpStatus.OK).json(orders)
+  } catch (error) {
+    console.log(error)
+    return res.status(httpStatus.BAD_REQUEST).json('error get order by date')
+  }
+}
+export const revenueOrderByMonth = async (req: express.Request, res: express.Response) => {
+  try {
+    const year: number = parseInt(req.query.year as string)
+    const month: number = parseInt(req.query.month as string)
+    const orders = await getOrderByMonth(year, month)
+    return res.status(httpStatus.OK).json(orders)
+  } catch (error) {
+    console.log(error)
+    return res.status(httpStatus.BAD_REQUEST).json('error get order by month')
+  }
+}
+export const revenueOrderByYear = async (req: express.Request, res: express.Response) => {
+  try {
+    const start: string = req.query.start as string
+    const end: string = req.query.end as string
+    if (!start || !end) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Need to enter enough information start date and end date')
+    }
+    const revenue = await revenueOrder(start, end)
+    if (!revenue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'revenue order not found')
+    }
+    return res.status(httpStatus.OK).json(revenue)
+  } catch (error) {
+    console.log(error)
+    return res.status(httpStatus.BAD_REQUEST).json('error get revenue order')
   }
 }
