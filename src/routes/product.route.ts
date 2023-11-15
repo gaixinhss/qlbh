@@ -23,7 +23,7 @@ export default (router: express.Router) => {
 
   router.delete('/pro/:code', checkManager, delPro)
 
-  router.get('/pro/tim-kiem-san-pham', checkCustomer, findPro)
+  router.get('/pro/search', checkCustomer, findPro)
 
   router.get('/pro/lich-su-san-pham/:code', checkManager, getHistoryPro)
 

@@ -1,6 +1,24 @@
 import { userModel } from '../models/user.model'
 
-export const getAllUser = () => userModel.find()
+export const getUsers = (item_per_page: number, skip: number, search: any) => {
+  if (search == undefined) {
+    return userModel.find({}, {}).limit(item_per_page).skip(skip)
+  }
+  return userModel
+    .find({
+      $or: [
+        { code: { $regex: new RegExp(search, 'i') } }, // Tìm kiếm từ khoá trong trường 'code'
+        { username: { $regex: new RegExp(search, 'i') } }, // Tìm kiếm từ khoá trong trường 'username'
+        { email: { $regex: new RegExp(search, 'i') } }, // Tìm kiếm từ khoá trong trường 'email'
+        { role: { $regex: new RegExp(search, 'i') } }, // Tìm kiếm từ khoá trong trường 'role'
+        { phone: { $regex: new RegExp(search, 'i') } }, // Tìm kiếm từ khoá trong trường 'phone'
+        { address: { $regex: new RegExp(search, 'i') } } // Tìm kiếm từ khoá trong trường 'address'
+      ]
+    })
+    .limit(item_per_page)
+    .skip(skip)
+}
+
 export const getUserByCode = (code: string) => userModel.findOne({ code })
 export const getLastUser = () => userModel.findOne({}, {}, { sort: { _id: -1 } })
 export const getUserByEmail = (email: string) => userModel.findOne({ email: email })

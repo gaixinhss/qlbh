@@ -14,12 +14,12 @@ export const addPromotion = async (req: express.Request, res: express.Response) 
 
     if (
       !(
-        body.promotion.promotionName! ||
-        body.promotion.start! ||
-        body.promotion.end! ||
-        body.promotion.type! ||
-        body.promotion.details! ||
-        body.promotion.discountRate!
+        body.promotion.promotionName ||
+        body.promotion.start ||
+        body.promotion.end ||
+        body.promotion.type ||
+        body.promotion.details ||
+        body.promotion.discountRate
       )
     ) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Data cannot be left blank')

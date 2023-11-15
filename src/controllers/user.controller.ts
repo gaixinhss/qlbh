@@ -1,11 +1,15 @@
 import express from 'express'
-import { delUserByCode, getAllUser, getUserByCode, updateUserByCode, findUser } from '../services/user.service'
+import { delUserByCode, getUsers, getUserByCode, updateUserByCode, findUser } from '../services/user.service'
 import httpStatus from 'http-status'
 import ApiError from '../utils/ApiError'
 
-export const getUsers = async (req: express.Request, res: express.Response) => {
+export const getListUser = async (req: express.Request, res: express.Response) => {
   try {
-    const users = await getAllUser()
+    const items_per_page: number = Number(req.query['items_per_page']) || 5
+    const page: number = Number(req.query['page']) || 1
+    const search = req.query['search'] || ''
+    const skip = page - 1 ? (page - 1) * items_per_page : 0
+    const users = await getUsers(items_per_page, skip, search)
     return res.status(httpStatus.OK).json(users)
   } catch (error) {
     console.log(error)
@@ -14,7 +18,7 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
 }
 export const getUser = async (req: express.Request, res: express.Response) => {
   try {
-    const { code } = req.params!
+    const { code } = req.params
     const user = await getUserByCode(code)
     if (!user) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found')
@@ -52,7 +56,7 @@ export const deleteUser = async (req: express.Request, res: express.Response) =>
       throw new ApiError(httpStatus.BAD_REQUEST, 'error deleted user 1')
     }
     return res.status(httpStatus.OK).json({
-      message: 'delete user successfull',
+      message: 'delete user successful',
       data: user
     })
   } catch (error) {

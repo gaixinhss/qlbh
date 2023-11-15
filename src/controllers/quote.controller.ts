@@ -12,7 +12,6 @@ import {
   updateQuote
 } from '../services/quote.service'
 import { getUserByCode } from '../services/user.service'
-import { getUser } from './user.controller'
 import { getProductByCode } from '../services/product.service'
 import { generateCode } from '../utils/generateCode'
 
@@ -69,14 +68,20 @@ export const createQuo = async (req: express.Request, res: express.Response) => 
       if (product.quantity > existProduct?.inventory!) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'too many products ' + existProduct.name)
       }
-      product.price = existProduct.sellingPrice!
+      if (existProduct.sellingPrice === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'selling price is undefined')
+      }
+      product.price = existProduct.sellingPrice
       totalAmount += product.price * product.quantity
       discountTotal += (totalAmount * product.discount) / 100
     }
     const lastQuote = await getLastQuote()
     let nextCode = 'BG1'
     if (lastQuote) {
-      const lastCode = lastQuote.code!
+      const lastCode = lastQuote.code
+      if (lastCode === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'last code is undefined')
+      }
       nextCode = generateCode(lastCode)
     }
     const newQuote = await createQuote({
@@ -139,10 +144,13 @@ export const editQuote = async (req: express.Request, res: express.Response) => 
       if (!existProduct) {
         throw new ApiError(httpStatus.NOT_FOUND, 'product not found')
       }
-      if (product.quantity > existProduct?.inventory!) {
+      if (product.quantity > existProduct.inventory!) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'too many products ' + existProduct.name)
       }
-      product.price = existProduct.sellingPrice!
+      if (existProduct.sellingPrice === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'selling price is undefined')
+      }
+      product.price = existProduct.sellingPrice
       totalAmount += product.price * product.quantity
       discountTotal += (totalAmount * product.discount) / 100
     }

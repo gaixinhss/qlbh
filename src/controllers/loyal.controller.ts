@@ -21,7 +21,7 @@ export const getLoyal = async (req: express.Request, res: express.Response) => {
 export const editLoyal = async (req: express.Request, res: express.Response) => {
   try {
     const { code } = req.params
-    const { pointLoyal } = req.body!
+    const { pointLoyal } = req.body
     const existUser = await getUserByCode(code)
     if (!existUser) {
       throw new ApiError(httpStatus.NOT_FOUND, 'user not found')
@@ -53,7 +53,6 @@ export const editLoyal = async (req: express.Request, res: express.Response) => 
         body.description = '5% salary increase'
       }
     }
-    console.log(body)
     const user = await updateUserByCode(code, { loyal: body })
     return res.status(httpStatus.OK).json({
       message: 'update loyal successful',

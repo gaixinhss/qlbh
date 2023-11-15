@@ -1,9 +1,8 @@
 import express from 'express'
 import httpStatus from 'http-status'
-import { generateCode } from '../utils/generateCode'
 import ApiError from '../utils/ApiError'
 import { findDebt, getAllDebt, getDebtByCode } from '../services/debt.service'
-import { getUserByCode } from '../services/user.service'
+
 
 export const getDebts = async (req: express.Request, res: express.Response) => {
   try {

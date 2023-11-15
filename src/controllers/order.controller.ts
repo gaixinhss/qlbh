@@ -17,8 +17,9 @@ import { getUserByCode, updateUserByCode } from '../services/user.service'
 import { getProductByCode, updateProduct } from '../services/product.service'
 import { generateCode } from '../utils/generateCode'
 import { createDebt, getLastDebt } from '../services/debt.service'
-import { Date } from 'mongoose'
 import { revenueByProduct } from '../services/order.service'
+import { textChangeRangeNewSpan } from 'typescript'
+import { isValidDateFormat } from '../utils/checkFormatDate'
 
 export const getOrders = async (req: express.Request, res: express.Response) => {
   try {
@@ -74,14 +75,18 @@ export const createOrd = async (req: express.Request, res: express.Response) => 
       if (!product) {
         throw new ApiError(httpStatus.NOT_FOUND, 'product not found' + productCode)
       }
-      const inventory: number = product?.inventory! //số lượng tồn kho
-
+      const inventory: number | undefined = product.inventory //số lượng tồn kho
+      if (inventory === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'inventory undefined')
+      }
       if (inventory < item.quantity) {
         //kiểm tra số lượng mua
-        throw new ApiError(httpStatus.BAD_REQUEST, 'too many products ' + product?.name)
+        throw new ApiError(httpStatus.BAD_REQUEST, 'too many products ' + product.name)
       }
-      item.price = product?.sellingPrice! //lấy giá bán hiện tại
-
+      item.price = product.sellingPrice ?? 0 //lấy giá bán hiện tại
+      if (item.price === 0) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'error price ==0')
+      }
       total += item.quantity * item.price //tính tổng tiền
 
       //update số lượng sản phẩm
@@ -92,7 +97,10 @@ export const createOrd = async (req: express.Request, res: express.Response) => 
     const lastOrder = await getLastOrder()
     let nextCode: string = 'DH1'
     if (lastOrder) {
-      const lastCode = lastOrder.code!
+      const lastCode = lastOrder.code
+      if (lastCode === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'last code is undefined')
+      }
       nextCode = generateCode(lastCode)
     }
     //nếu status == false (chưa thanh toán) thêm vào bảng công nợ Debt
@@ -100,7 +108,10 @@ export const createOrd = async (req: express.Request, res: express.Response) => 
       const lastDebt = await getLastDebt()
       let codeDebt: string = 'DE1'
       if (lastDebt) {
-        const lastDebtCode = lastDebt.code!
+        const lastDebtCode = lastDebt.code
+        if (lastDebtCode === undefined) {
+          throw new ApiError(httpStatus.BAD_REQUEST, 'last dept code is undefined')
+        }
         codeDebt = generateCode(lastDebtCode)
       }
       ///thêm debt mới
@@ -226,12 +237,21 @@ export const editOrderItem = async (req: express.Request, res: express.Response)
     const orderItemOld = order.orderItem
     //trả về số lượng cho product
     for (const oldItem of orderItemOld) {
-      const productCode: string = oldItem.product!
-      const product = await getProductByCode(productCode)
-      const inventory: number = product?.inventory!
-      const productUpdate: any = { inventory: inventory + oldItem?.quantity! }
-      console.log(productUpdate)
-      await updateProduct(productCode, productUpdate)
+      if (oldItem.product && oldItem.quantity) {
+        const productCode: string = oldItem.product
+        const product = await getProductByCode(productCode)
+        if (!product) {
+          throw new ApiError(httpStatus.NOT_FOUND, `product code : ${productCode} not found`)
+        }
+        const inventory: number | undefined = product.inventory
+        if (inventory === undefined) {
+          throw new ApiError(httpStatus.BAD_REQUEST, 'inventory undefined')
+        }
+        const productUpdate: any = { inventory: inventory + oldItem.quantity }
+        await updateProduct(productCode, productUpdate)
+      } else {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'oldItem  ')
+      }
     }
     // Calculate the new total order value
     let total: number = 0
@@ -244,14 +264,18 @@ export const editOrderItem = async (req: express.Request, res: express.Response)
         throw new ApiError(httpStatus.NOT_FOUND, 'Product not found: ' + productCode)
       }
 
-      const inventory: number = product.inventory!
-
+      const inventory: number | undefined = product.inventory
+      if (inventory === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'inventory undefined')
+      }
       if (inventory < newItem.quantity) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Too many products: ' + product.name)
       }
-
+      if (product.sellingPrice === undefined) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'product does not have a selling price')
+      }
       // Update the price from the product data
-      newItem.price = product.sellingPrice!
+      newItem.price = product.sellingPrice
 
       // Calculate the total price for this item
       const itemTotal = newItem.quantity * newItem.price
@@ -288,8 +312,11 @@ export const revenueOrdersByDate = async (req: express.Request, res: express.Res
 }
 export const revenueOrderByMonth = async (req: express.Request, res: express.Response) => {
   try {
-    const year: number = parseInt(req.query.year as string)
-    const month: number = parseInt(req.query.month as string)
+    const year: number = Number(req.query.year) || -1
+    const month: number = Number(req.query.month) || -1
+    if (year < 2000 && month < 1) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'year and month error')
+    }
     const orders = await getOrderByMonth(year, month)
     return res.status(httpStatus.OK).json(orders)
   } catch (error) {
@@ -299,9 +326,9 @@ export const revenueOrderByMonth = async (req: express.Request, res: express.Res
 }
 export const revenueOrderByYear = async (req: express.Request, res: express.Response) => {
   try {
-    const start: string = req.query.start as string
-    const end: string = req.query.end as string
-    if (!start || !end) {
+    const start: any = req.query.start || ''
+    const end: any = req.query.end || ''
+    if (!start || !end || !isValidDateFormat(start) || !isValidDateFormat(end)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Need to enter enough information start date and end date')
     }
     const revenue = await revenueOrder(start, end)

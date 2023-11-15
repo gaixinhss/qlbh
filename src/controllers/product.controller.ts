@@ -28,7 +28,7 @@ export const getProduct = async (req: express.Request, res: express.Response) =>
   try {
     const { code } = req.params
     const product = await getProductByCode(code)
-    if (product) {
+    if (!product) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Product not found')
     }
     return res.status(200).json(product)
@@ -154,7 +154,7 @@ export const findPro = async (req: express.Request, res: express.Response) => {
 
 export const getHistoryPro = async (req: express.Request, res: express.Response) => {
   try {
-    const { code } = req.params!
+    const { code } = req.params
     const history = await getHistoryPrice(code)
     return res.status(httpStatus.OK).json({ data: history })
   } catch (error) {
@@ -169,13 +169,16 @@ export const statisticsProduct = async (req: express.Request, res: express.Respo
     let totalProduct: number = 0
     let totalPrice: number = 0
     products.forEach((product) => {
-      totalProduct += product.inventory!
-      totalPrice += product.inventory! * product.costPrice!
-      const code = product.code!
-      const sellingPrice = product.sellingPrice!
-      const inventory = product.inventory!
-
-      inventoryList.push({ code, sellingPrice, inventory })
+      if (product.inventory && product.costPrice && product.code && product.sellingPrice) {
+        totalProduct += product.inventory
+        totalPrice += product.inventory * product.costPrice
+        const code = product.code
+        const sellingPrice = product.sellingPrice
+        const inventory = product.inventory
+        inventoryList.push({ code, sellingPrice, inventory })
+      } else {
+        throw new ApiError(httpStatus.BAD_REQUEST, `error ${product} parameters`)
+      }
     })
     res.status(httpStatus.OK).json({
       data: inventoryList,
